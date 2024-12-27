@@ -1,0 +1,238 @@
+<?php
+    //main variables
+    $product_checkout_id = "";
+    $checkout_user_id = "";
+
+    //product variables
+    $total_amount = "";
+    $product_name = "";
+    $product_price = ""; 
+    $product_quantity = "";
+
+    //user variables
+    $user_names = "";
+    $phone = "";
+    $email = "";
+    $country = ""; 
+    $city_legion = "";
+    $address = "";
+
+    //cart info
+    $cart_id = "";
+
+    if(isset($_GET['cart_id'])) {
+        $cart_id = $_GET['cart_id'];
+    }
+
+    if(isset($_GET['product_checkout_id'])) {
+        $product_checkout_id = $_GET['product_checkout_id']; 
+        //select product
+        $select_product = mysqli_query(
+            $conn, 
+            "SELECT * FROM products WHERE product_id = '$product_checkout_id'"
+        );
+        if($select_product) {
+            foreach($select_product as $product) {
+                $product_name = $product['product_name'];
+                $product_price = $product['price'];  
+                // $product_quantity = $product['quantity'];
+                break;
+            } 
+        }
+    }
+ 
+
+    $select_cart_items = mysqli_query(
+        $conn, 
+        "SELECT * FROM cart_items WHERE product_id = '$product_checkout_id'"
+    );
+    if($select_cart_items) {
+        foreach($select_cart_items as $cart_items){
+            $product_quantity = $cart_items['quantity'];
+            break;
+        }
+    }
+
+    if(isset($_GET['checkout_user_id'])) {
+        $checkout_user_id = $_GET['checkout_user_id']; 
+        //select user
+        $select_user = mysqli_query(
+            $conn, 
+            "SELECT * FROM users WHERE user_id = '$checkout_user_id'"
+        );
+        if($select_user) {
+            foreach($select_user as $user) {
+                $user_names = $user['name'];
+                $phone = $user['phone'];
+                $email = $user['email'];
+                $country = $user['country'];
+                $city_legion = $user['city_legion'];
+                $address = $user['address']; 
+                break;
+            }
+        }
+    }
+    if(isset($_GET['total_amount'])) {
+        $total_amount = $_GET['total_amount']; 
+    }
+?>
+
+<style>
+    .btn-red {
+        background-color: var(--secondary);
+        color: white;
+    } 
+    .total-amount {
+        font-size: 2rem;
+        color: #888;
+        font-weight: bold;
+    }
+    .card-custom {
+        border: none;
+        background-color: whitesmoke;
+    }
+
+    input:invalid{
+        border: 1px solid red;
+    }
+    </style>
+
+<div class="container mt-5">
+    <div class="my-2">
+        <?php
+            require './components/back_btn.php';
+        ?>
+    </div>
+    <div class="row">
+        <!-- Left Column (Customer Information, Payment Method) -->
+         <form class="col-lg-7" action="./services/payment/pay_with_cod.php" method="post">
+            <div >
+                <div class="card card-custom p-4 mb-4">
+                    <h5>Customer Information</h5>
+                    <?php
+                        $check_complete_profile = mysqli_query(
+                            $conn, 
+                            "SELECT * FROM users WHERE email = '$email'"
+                        );
+                        foreach ($check_complete_profile as $customer) {
+                            if($customer['address'] == '' && $customer['phone'] == '') {
+                                ?>
+                                    <div class="alert alert-warning" role="alert">Please complete your profile to proceed with checkout, or fill out the form manually. <a href="profile.php?user_id= <?=$customer['user_id']?>" class="btn bg-dark text-white border bg-light">Complete profile</a></div>'
+                                <?php
+                                break;
+                            }
+                        }
+                    ?>
+                    <div class="mb-3">
+                        <input type="hidden" name="order_user_id" value="<?=$checkout_user_id?>" id="">
+                        <label for="" class="form-label">Full names</label>
+                        <input type="text" class="form-control" name="names" placeholder="Full names" value="<?=$user_names?>" required>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" name="phone" placeholder="Phone number" value="<?=$phone?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="" class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" placeholder="email@example.com" value="<?=$email?>" required>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-6">
+                            <label for="" class="form-label">Country</label>
+                            <select class="form-select" name="country" required>
+                            <option selected hidden>Select Country</option>
+                                <option value="rwanda">Rwanda</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="" class="form-label">Legion</label>
+                            <select class="form-select" name="city_legion" required>
+                                <option selected hidden>Select City legion</option>
+                                <option value="nyarugenge">Nyarugenge</option>
+                                <option value="kicukiro">Kicukiro</option>
+                                <option value="gasabo">Gasabo</option>
+                                <option value="kamonyi">Kamonyi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label for="" class="form-label">Delivery address</label>
+                        <input type="text" class="form-control" name="address" placeholder="Delivery address" value="<?=$address?>" required>
+                    </div>
+                </div>
+
+                <!-- product details -->
+                 <div>
+                    <input type="hidden" name="cart_id" value="<?=$cart_id?>" id="">
+                    <input type="hidden" name="product_id" value="<?=$product_checkout_id?>" id="">
+                    <input type="hidden" name="product_name" value="<?=$product_name?>"  id="">
+                    <input type="hidden" name="product_price" value="<?=$product_price?>"  id="">
+                    <input type="hidden" name="product_quantity" value="<?=$product_quantity?>"  id="">
+                 </div>
+
+                <!-- Payment Method Section -->
+                <div class="card card-custom p-4">
+                    <h5>Payment Method</h5>
+                    <div class="btn-group w-100 mb-3">
+                        <span class="btn btn-outline-success w-50"  data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">Cash on Delivery (COD)</span>
+                        <!-- <button class="btn btn-outline-secondary w-50">FlutterWave</button> -->
+                    </div>
+                    <div class="mb-2"> 
+                        <div class="collapse" id="collapseExample">
+                            <div class="card card-body">
+                                <p>You can pay cash when you get your order</p> 
+                                <button class="btn btn-outline-success w-50" name="order_with_cod">Make order</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-group w-100 mb-3">
+                        <span class="btn btn-outline-warning w-50"  data-toggle="collapse" data-target="#collapseExample2" aria-expanded="false" aria-controls="collapseExample">Flutter Wave</span>
+                        <!-- <button class="btn btn-outline-secondary w-50">FlutterWave</button> -->
+                    </div>
+                    <div class="mb-2"> 
+                        <div class="collapse" id="collapseExample2">
+                            <div class="card card-body">
+                                <span class="btn btn-outline-warning w-50" name="order_with_cod">Make order</button>
+                            </div>
+                        </div>
+                    </div>
+
+                                 
+                </div>
+            </div>
+        </form>
+
+        <!-- Right Column (Order Summary) -->
+        <div class="col-lg-5">
+            <div class="card card-custom p-4 mb-4">
+                <h5>Total Amount</h5>
+                <p class="total-amount"><?=number_format($total_amount, 2)?> Frw</p>
+                <p class="text-success">Secure Payment</p>
+
+                <hr>
+
+                <h6>Order Summary</h6>
+                <p><?=$product_name?></p>
+                <p>Quantity <?=$product_quantity?></p>
+                <div class="d-flex justify-content-between">
+                    <span>Subtotal</span>
+                    <span><?=$total_amount?> Frw</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Shipping</span>
+                    <span>1000 Frw</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <span><strong>Total</strong></span>
+                    <span class="total-amount"><?=$total_amount + 1000?> Frw</span>
+                </div>
+            </div>
+
+            
+        </div>
+    </div>
+</div>
